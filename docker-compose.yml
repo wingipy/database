@@ -1,0 +1,46 @@
+version: '3.8'
+
+networks:
+  template_vlan:
+    external: true
+    name: template_vlan
+
+services:
+  mysqldb:
+    container_name: "db_mydiary"
+    image: mysql:8.0.25
+    restart: on-failure
+    env_file: ./.env
+    environment:
+      - MYSQL_ROOT_PASSWORD=$MYSQLDB_ROOT_PASSWORD
+      - MYSQL_DATABASE=$MYSQLDB_DATABASE
+    ports:
+      - $MYSQLDB_LOCAL_PORT:$MYSQLDB_DOCKER_PORT
+    volumes:
+      - db:/var/lib/mysql
+    networks:
+      - template_vlan
+
+  app:
+    container_name: "app_mydiary"
+    depends_on:
+      - mysqldb
+    build: ./app
+    restart: always
+    env_file: ./.env
+    ports:
+      - $NODE_LOCAL_PORT:$NODE_DOCKER_PORT
+    environment:
+      - DB_HOST=mysqldb
+      - DB_USER=$MYSQLDB_USER
+      - DB_PASSWORD=$MYSQLDB_ROOT_PASSWORD
+      - DB_NAME=$MYSQLDB_DATABASE
+      - DB_PORT=$MYSQLDB_DOCKER_PORT
+    stdin_open: true
+    tty: true
+    networks:
+      - template_vlan
+
+
+volumes: 
+  db:
